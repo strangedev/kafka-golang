@@ -1,0 +1,14 @@
+version: "3.5"
+services:
+  toolbox:
+    build: .
+    networks:
+      - default
+      - kafka
+    volumes:
+    - ./:/go/src/app
+    ports:
+    - 8084:8080
+networks:
+  kafka:
+    external: true
