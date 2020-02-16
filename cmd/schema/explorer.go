@@ -2,7 +2,6 @@ package main
 
 import (
 	"encoding/json"
-	"fmt"
 	"github.com/google/uuid"
 	"kafka-go/schema"
 	"log"
@@ -13,7 +12,7 @@ import (
 )
 
 type Schema struct {
-	UUID          uuid.UUID `json:"UUID"`
+	UUID          uuid.UUID `json:"uuid"`
 	Specification string    `json:"spec"`
 }
 
@@ -40,8 +39,18 @@ type Aliases struct {
 	Aliases []Alias `json:"aliases"`
 }
 
-type Error struct {
-	Message string `json:"message"`
+func writeJSON(writer http.ResponseWriter, data interface{}) {
+	ret, err := json.Marshal(data)
+	if err != nil {
+		http.Error(writer, err.Error(), http.StatusInternalServerError)
+		log.Println(err)
+		return
+	}
+
+	writer.Header().Set("Content-Type", "application/json")
+	writer.Header().Set("Access-Control-Allow-Origin", "*")
+	writer.Header().Set("Access-Control-Allow-Headers", "*")
+	_, err = writer.Write(ret)
 }
 
 func main() {
@@ -50,7 +59,7 @@ func main() {
 
 	go (func() {
 		for sig := range signals {
-			log.Fatalf("Caught %v", sig)
+			log.Panicf("Caught %v", sig)
 		}
 	})()
 
@@ -62,46 +71,31 @@ func main() {
 	http.HandleFunc("/schema/list", func(writer http.ResponseWriter, request *http.Request) {
 		schemata := schemaRepo.ListSchemata()
 		schemaList := SchemaList{Schemata: schemata, Count: len(schemata)}
-		ret, err := json.Marshal(schemaList)
-		if err != nil {
-			log.Println(err)
-			return
-		}
 
-		_, err = fmt.Fprintf(writer, string(ret))
-		if err != nil {
-			log.Println(err)
-			return
-		}
+		writeJSON(writer, schemaList)
 	})
 
 	http.HandleFunc("/schema/describe", func(writer http.ResponseWriter, request *http.Request) {
 		query := request.URL.Query()
 		if err != nil {
+			http.Error(writer, err.Error(), http.StatusInternalServerError)
 			log.Println(err)
 			return
 		}
 
 		schemaUUIDs := query["uuid"]
 		if len(schemaUUIDs) < 1 {
-			errorMessage := Error{Message:"No UUIDs received"}
-			ret, err := json.Marshal(errorMessage)
-			if err != nil {
-				log.Println(err)
-				return
-			}
-			_, err = fmt.Fprintf(writer, string(ret))
-			if err != nil {
-				log.Println(err)
-			}
+			http.Error(writer, "Required query <uuid>", http.StatusBadRequest)
 			return
 		}
+
 		schemata := Schemata{Schemata: make([]Schema, 0, len(schemaUUIDs))}
 		for _, uuidString := range schemaUUIDs {
 			schemaUUID, err := uuid.Parse(uuidString)
 			if err != nil {
+				http.Error(writer, err.Error(), http.StatusBadRequest)
 			 	log.Println(err)
-			 	continue
+			 	return
 			}
 
 			spec, ok := schemaRepo.GetSpecification(schemaUUID)
@@ -109,36 +103,18 @@ func main() {
 				log.Println(err)
 				continue
 			}
+
 			schemata.Schemata = append(schemata.Schemata, Schema{UUID:schemaUUID, Specification:spec})
 		}
 
-		ret, err := json.Marshal(schemata)
-		if err != nil {
-			log.Println(err)
-			return
-		}
-
-		_, err = fmt.Fprintf(writer, string(ret))
-		if err != nil {
-			log.Println(err)
-			return
-		}
+		writeJSON(writer, schemata)
 	})
 
 	http.HandleFunc("/alias/list", func(writer http.ResponseWriter, request *http.Request) {
 		aliases := schemaRepo.ListAliases()
 		aliasList := AliasList{Aliases: aliases, Count: len(aliases)}
-		ret, err := json.Marshal(aliasList)
-		if err != nil {
-			log.Println(err)
-			return
-		}
 
-		_, err = fmt.Fprintf(writer, string(ret))
-		if err != nil {
-			log.Println(err)
-			return
-		}
+		writeJSON(writer, aliasList)
 	})
 
 	http.HandleFunc("/alias/describe", func(writer http.ResponseWriter, request *http.Request) {
@@ -150,43 +126,23 @@ func main() {
 
 		aliasesQuery := query["alias"]
 		if len(aliasesQuery) < 1 {
-			errorMessage := Error{Message:"No aliases received"}
-			ret, err := json.Marshal(errorMessage)
-			if err != nil {
-				log.Println(err)
-				return
-			}
-			_, err = fmt.Fprintf(writer, string(ret))
-			if err != nil {
-				log.Println(err)
-			}
+			http.Error(writer, "Required query <alias>", http.StatusBadRequest)
 			return
 		}
+
 		aliases := Aliases{Aliases: make([]Alias, 0, )}
 		for _, alias := range aliasesQuery {
-
 			schemaUUID, ok := schemaRepo.WhoIs(alias)
 			if !ok {
 				log.Println(err)
 				continue
 			}
+
 			aliases.Aliases = append(aliases.Aliases, Alias{UUID:schemaUUID, Alias:alias})
 		}
 
-		ret, err := json.Marshal(aliases)
-		if err != nil {
-			log.Println(err)
-			return
-		}
-
-		_, err = fmt.Fprintf(writer, string(ret))
-		if err != nil {
-			log.Println(err)
-			return
-		}
+		writeJSON(writer, aliases)
 	})
-
-	http.Handle("/", http.FileServer(http.Dir("./cmd/schema/ui/explorer")))
 
 	err = http.ListenAndServe(":8080", nil)
 	if err != nil {
