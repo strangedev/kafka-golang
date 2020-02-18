@@ -3,13 +3,15 @@ package main
 import (
 	"encoding/json"
 	"github.com/google/uuid"
-	"kafka-go/schema"
+	"kafka-go/schema/query/local"
 	"log"
 	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
 )
+
+// TODO
 
 type Schema struct {
 	UUID          uuid.UUID `json:"uuid"`
@@ -63,7 +65,7 @@ func main() {
 		}
 	})()
 
-	schemaRepo, err := schema.NewRepo("broker0:9092", signals)
+	schemaRepo, err := local.NewRepo("broker0:9092", signals)
 	if err != nil {
 		log.Fatalln("Can't initialize SchemaRepo")
 	}

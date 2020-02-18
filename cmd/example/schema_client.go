@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"kafka-go/schema"
+	"kafka-go/schema/query/local"
 	"kafka-go/utils"
 	"log"
 	"os"
@@ -14,17 +15,26 @@ func main() {
 	signals := make(chan os.Signal, 1)
 	signal.Notify(signals, syscall.SIGINT, syscall.SIGTERM)
 
-	schemaAlias := os.Args[1]
-	schemaRepo, err := schema.NewRepo("broker0:9092", signals)
+	schemaRepo, err := local.NewRepo("broker0:9092")
 	if err != nil {
 		log.Fatalln("Can't initialize SchemaRepo")
 	}
 
-	fmt.Printf("Wait for schema alias %v\n", schemaAlias)
-	aliasReady := schemaRepo.WaitAliasReady(schemaAlias)
+	stop := schemaRepo.Run()
 
-	<-utils.SigAbort(aliasReady, signals)
-	fmt.Println("Alias ready")
+	if len(os.Args) == 2 {
+		schemaAlias := schema.Alias(os.Args[1])
 
+		fmt.Printf("Wait for schema alias %v\n", schemaAlias)
+		aliasReady := schemaRepo.WaitAliasReady(schemaAlias)
 
+		ok := <-utils.SigAbort(aliasReady, signals)
+		if ok {
+			fmt.Println("Alias ready")
+		}
+		stop<-true
+		os.Exit(0)
+	}
+	<-signals
+	stop<-true
 }

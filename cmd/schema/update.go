@@ -3,12 +3,12 @@ package main
 import (
 	"fmt"
 	"github.com/google/uuid"
-	"kafka-go/schema"
+	"kafka-go/schema/command"
 	"os"
 )
 
 func main() {
-	cmd, err := schema.NewCommander("broker0:9092")
+	cmd, err := command.NewUpdater("broker0:9092")
 	if err != nil {
 		fmt.Println("Can't create commander")
 		fmt.Println(err)
