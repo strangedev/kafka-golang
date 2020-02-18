@@ -8,9 +8,9 @@ import (
 type observers map[string][]chan bool
 
 type LockableObservable struct {
-	DataLock sync.RWMutex
+	DataLock     sync.RWMutex
 	ObserverLock sync.Mutex
-	Observers observers
+	Observers    observers
 }
 
 type Key fmt.Stringer
@@ -21,6 +21,8 @@ type BasicObservable interface {
 }
 
 func (l LockableObservable) Observe(k Key) chan bool {
+	l.ObserverLock.Lock()
+	defer l.ObserverLock.Unlock()
 	observer := make(chan bool)
 	key := k.String()
 	l.Observers[key] = append(l.Observers[key], observer)
@@ -28,8 +30,10 @@ func (l LockableObservable) Observe(k Key) chan bool {
 }
 
 func (l LockableObservable) Notify(k Key) {
+	l.ObserverLock.Lock()
+	defer l.ObserverLock.Unlock()
 	for _, observer := range l.Observers[k.String()] {
-		observer<-true
+		observer <- true
 	}
 }
 

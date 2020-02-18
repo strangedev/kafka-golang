@@ -32,9 +32,9 @@ func main() {
 		if ok {
 			fmt.Println("Alias ready")
 		}
-		stop<-true
+		stop <- true
 		os.Exit(0)
 	}
 	<-signals
-	stop<-true
+	stop <- true
 }

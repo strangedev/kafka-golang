@@ -24,7 +24,7 @@ func main() {
 	signal.Notify(signals, syscall.SIGINT, syscall.SIGTERM)
 	go (func() {
 		<-signals
-		stop<-true
+		stop <- true
 	})()
 
 	ok := <-schemaReady

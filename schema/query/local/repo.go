@@ -64,7 +64,7 @@ func (repo Repo) WaitAliasReady(alias schema.Alias) chan bool {
 		if !ok {
 			<-schemaReady
 		}
-		aliasIsReady<-true
+		aliasIsReady <- true
 	})()
 	return aliasIsReady
 }
@@ -101,7 +101,6 @@ func (repo Repo) GetSpecification(schema uuid.UUID) (string, bool) {
 func (repo Repo) Count() int {
 	return len(repo.Schemata.Map)
 }
-
 
 func (repo Repo) handleSchemaUpdate(event *kafka.Message) error {
 	var request command.UpdateRequest

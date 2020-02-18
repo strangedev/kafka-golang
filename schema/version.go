@@ -3,7 +3,7 @@ package schema
 import "fmt"
 
 type NameVersion struct {
-	Name string
+	Name    string
 	Version uint
 }
 
@@ -18,7 +18,7 @@ type Version interface {
 }
 
 func NewVersionOrigin(alias string) NameVersion {
-	return NameVersion{Name:alias, Version:0}
+	return NameVersion{Name: alias, Version: 0}
 }
 
 func (v NameVersion) IsOrigin() bool {
@@ -29,7 +29,7 @@ func (v NameVersion) GetVersion() uint {
 	return v.Version
 }
 
-func (v NameVersion) GetName() string  {
+func (v NameVersion) GetName() string {
 	return v.Name
 }
 
@@ -38,12 +38,12 @@ func (v NameVersion) GetPrevious() Version {
 		return v
 	}
 	previousVersion := v.Version - 1
-	return NameVersion{Name:v.Name, Version:previousVersion}
+	return NameVersion{Name: v.Name, Version: previousVersion}
 }
 
 func (v NameVersion) GetNext() Version {
 	previousVersion := v.Version + 1
-	return NameVersion{Name:v.Name, Version:previousVersion}
+	return NameVersion{Name: v.Name, Version: previousVersion}
 }
 
 func (v NameVersion) String() string {

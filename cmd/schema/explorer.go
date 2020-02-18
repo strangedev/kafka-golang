@@ -23,18 +23,18 @@ type Schemata struct {
 }
 
 type SchemaList struct {
-	Count    int      	 `json:"count"`
+	Count    int         `json:"count"`
 	Schemata []uuid.UUID `json:"schemata"`
 }
 
 type Alias struct {
-	Alias string `json:"alias"`
-	UUID uuid.UUID `json:"uuid"`
+	Alias string    `json:"alias"`
+	UUID  uuid.UUID `json:"uuid"`
 }
 
 type AliasList struct {
 	Aliases []string `json:"aliases"`
-	Count int `json:"count"`
+	Count   int      `json:"count"`
 }
 
 type Aliases struct {
@@ -96,8 +96,8 @@ func main() {
 			schemaUUID, err := uuid.Parse(uuidString)
 			if err != nil {
 				http.Error(writer, err.Error(), http.StatusBadRequest)
-			 	log.Println(err)
-			 	return
+				log.Println(err)
+				return
 			}
 
 			spec, ok := schemaRepo.GetSpecification(schemaUUID)
@@ -106,7 +106,7 @@ func main() {
 				continue
 			}
 
-			schemata.Schemata = append(schemata.Schemata, Schema{UUID:schemaUUID, Specification:spec})
+			schemata.Schemata = append(schemata.Schemata, Schema{UUID: schemaUUID, Specification: spec})
 		}
 
 		writeJSON(writer, schemata)
@@ -132,7 +132,7 @@ func main() {
 			return
 		}
 
-		aliases := Aliases{Aliases: make([]Alias, 0, )}
+		aliases := Aliases{Aliases: make([]Alias, 0)}
 		for _, alias := range aliasesQuery {
 			schemaUUID, ok := schemaRepo.WhoIs(alias)
 			if !ok {
@@ -140,7 +140,7 @@ func main() {
 				continue
 			}
 
-			aliases.Aliases = append(aliases.Aliases, Alias{UUID:schemaUUID, Alias:alias})
+			aliases.Aliases = append(aliases.Aliases, Alias{UUID: schemaUUID, Alias: alias})
 		}
 
 		writeJSON(writer, aliases)

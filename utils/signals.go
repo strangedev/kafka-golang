@@ -4,18 +4,17 @@ import "os"
 
 func SigAbort(ready chan bool, abort chan os.Signal) chan bool {
 	fin := make(chan bool)
-	go (func(){
+	go (func() {
 		select {
 		case _ = <-abort:
-			fin<-false
+			fin <- false
 			close(fin)
 			return
 		case _ = <-ready:
-			fin<-true
+			fin <- true
 			close(fin)
 			return
 		}
 	})()
 	return fin
 }
-

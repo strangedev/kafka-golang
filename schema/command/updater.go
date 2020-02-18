@@ -29,12 +29,12 @@ func NewUpdaterWithProducer(p *producer.KafkaProducer) Updater {
 
 func (cmd Commander) UpdateSchema(schemaUUID uuid.UUID, specification string) error {
 	topic := "schema_update"
-	request := UpdateRequest{UUID: schemaUUID, Spec:specification}
+	request := UpdateRequest{UUID: schemaUUID, Spec: specification}
 	return cmd.ProduceJSONSync(topic, kafka.PartitionAny, request)
 }
 
 func (cmd Commander) UpdateAlias(alias string, schemaUUID uuid.UUID) error {
 	topic := "schema_alias"
-	request := AliasRequest{UUID: schemaUUID, Alias:alias}
+	request := AliasRequest{UUID: schemaUUID, Alias: alias}
 	return cmd.ProduceJSONSync(topic, kafka.PartitionAny, request)
 }

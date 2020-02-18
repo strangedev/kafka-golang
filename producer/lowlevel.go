@@ -14,7 +14,7 @@ func NewKafkaProducer(broker string) (*KafkaProducer, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &KafkaProducer{Producer:p}, nil
+	return &KafkaProducer{Producer: p}, nil
 }
 
 type LowLevelProducer interface {
