@@ -2,8 +2,12 @@ package main
 
 import (
 	"encoding/json"
+	"flag"
+	"github.com/confluentinc/confluent-kafka-go/kafka"
 	"github.com/google/uuid"
+	"github.com/strangedev/kafka-golang/schema"
 	"github.com/strangedev/kafka-golang/schema/query/local"
+	"github.com/strangedev/kafka-golang/utils"
 	"log"
 	"net/http"
 	"os"
@@ -11,34 +15,38 @@ import (
 	"syscall"
 )
 
-// TODO
-
-type Schema struct {
+type SchemaDTO struct {
 	UUID          uuid.UUID `json:"uuid"`
 	Specification string    `json:"spec"`
 }
 
-type Schemata struct {
-	Schemata []Schema `json:"schemata"`
+type SchemataDTO struct {
+	Schemata []SchemaDTO `json:"schemata"`
 }
 
-type SchemaList struct {
+type SchemaListDTO struct {
 	Count    int         `json:"count"`
 	Schemata []uuid.UUID `json:"schemata"`
 }
 
-type Alias struct {
-	Alias string    `json:"alias"`
+type AliasDTO struct {
+	Alias schema.Alias	`json:"alias"`
 	UUID  uuid.UUID `json:"uuid"`
 }
 
-type AliasList struct {
-	Aliases []string `json:"aliases"`
+type AliasListDTO struct {
+	Aliases []schema.Alias `json:"aliases"`
 	Count   int      `json:"count"`
 }
 
-type Aliases struct {
-	Aliases []Alias `json:"aliases"`
+type AliasesDTO struct {
+	Aliases []AliasDTO `json:"aliases"`
+}
+
+var broker string
+
+func init() {
+	flag.StringVar(&broker, "broker", "broker0:9092", "URL of a Kafka broker")
 }
 
 func writeJSON(writer http.ResponseWriter, data interface{}) {
@@ -56,23 +64,36 @@ func writeJSON(writer http.ResponseWriter, data interface{}) {
 }
 
 func main() {
+	flag.Parse()
+
+	consumer, err := kafka.NewConsumer(&kafka.ConfigMap{
+		"bootstrap.servers":     broker,
+		"group.id":              uuid.New().String(),
+		"broker.address.family": "v4",
+		"session.timeout.ms":    6000,
+		"auto.offset.reset":     "earliest",
+	})
+	utils.CheckFatal("Unable to initialize Kafka consumer", err)
+
+	schemaRepo, err := local.NewLocalRepo(consumer)
+	utils.CheckFatal("Unable to initialize schema repository", err)
+
+	stop, err := schemaRepo.Run()
+	utils.CheckFatal("Unable to start schema repository", err)
+
 	signals := make(chan os.Signal, 1)
 	signal.Notify(signals, syscall.SIGINT, syscall.SIGTERM)
 
 	go (func() {
 		for sig := range signals {
+			stop<-true
 			log.Panicf("Caught %v", sig)
 		}
 	})()
 
-	schemaRepo, err := local.NewRepo("broker0:9092", signals)
-	if err != nil {
-		log.Fatalln("Can't initialize SchemaRepo")
-	}
-
 	http.HandleFunc("/schema/list", func(writer http.ResponseWriter, request *http.Request) {
 		schemata := schemaRepo.ListSchemata()
-		schemaList := SchemaList{Schemata: schemata, Count: len(schemata)}
+		schemaList := SchemaListDTO{Schemata: schemata, Count: len(schemata)}
 
 		writeJSON(writer, schemaList)
 	})
@@ -91,7 +112,7 @@ func main() {
 			return
 		}
 
-		schemata := Schemata{Schemata: make([]Schema, 0, len(schemaUUIDs))}
+		schemata := SchemataDTO{Schemata: make([]SchemaDTO, 0, len(schemaUUIDs))}
 		for _, uuidString := range schemaUUIDs {
 			schemaUUID, err := uuid.Parse(uuidString)
 			if err != nil {
@@ -106,7 +127,7 @@ func main() {
 				continue
 			}
 
-			schemata.Schemata = append(schemata.Schemata, Schema{UUID: schemaUUID, Specification: spec})
+			schemata.Schemata = append(schemata.Schemata, SchemaDTO{UUID: schemaUUID, Specification: spec})
 		}
 
 		writeJSON(writer, schemata)
@@ -114,7 +135,7 @@ func main() {
 
 	http.HandleFunc("/alias/list", func(writer http.ResponseWriter, request *http.Request) {
 		aliases := schemaRepo.ListAliases()
-		aliasList := AliasList{Aliases: aliases, Count: len(aliases)}
+		aliasList := AliasListDTO{Aliases: aliases, Count: len(aliases)}
 
 		writeJSON(writer, aliasList)
 	})
@@ -132,15 +153,16 @@ func main() {
 			return
 		}
 
-		aliases := Aliases{Aliases: make([]Alias, 0)}
-		for _, alias := range aliasesQuery {
+		aliases := AliasesDTO{Aliases: make([]AliasDTO, 0)}
+		for _, aliasString := range aliasesQuery {
+			alias := schema.Alias(aliasString)
 			schemaUUID, ok := schemaRepo.WhoIs(alias)
 			if !ok {
 				log.Println(err)
 				continue
 			}
 
-			aliases.Aliases = append(aliases.Aliases, Alias{UUID: schemaUUID, Alias: alias})
+			aliases.Aliases = append(aliases.Aliases, AliasDTO{UUID: schemaUUID, Alias: alias})
 		}
 
 		writeJSON(writer, aliases)

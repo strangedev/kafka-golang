@@ -42,6 +42,7 @@ func main() {
 	fmt.Printf("Created Consumer %v\n", c)
 
 	err = c.SubscribeTopics(topics, nil)
+	fmt.Println(err)
 
 	run := true
 

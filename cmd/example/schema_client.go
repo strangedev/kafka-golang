@@ -1,7 +1,9 @@
 package main
 
 import (
-	"fmt"
+	"flag"
+	"github.com/confluentinc/confluent-kafka-go/kafka"
+	"github.com/google/uuid"
 	"github.com/strangedev/kafka-golang/schema"
 	"github.com/strangedev/kafka-golang/schema/query/local"
 	"github.com/strangedev/kafka-golang/utils"
@@ -11,30 +13,52 @@ import (
 	"syscall"
 )
 
+var broker string
+
+func init() {
+	flag.StringVar(&broker, "broker", "broker0:9092", "URL of a Kafka broker")
+}
+
 func main() {
+	flag.Parse()
+
 	signals := make(chan os.Signal, 1)
 	signal.Notify(signals, syscall.SIGINT, syscall.SIGTERM)
 
-	schemaRepo, err := local.NewRepo("broker0:9092")
-	if err != nil {
-		log.Fatalln("Can't initialize SchemaRepo")
-	}
+	log.Printf("Pulling schemata from %v", broker)
 
-	stop := schemaRepo.Run()
+	consumer, err := kafka.NewConsumer(&kafka.ConfigMap{
+		"bootstrap.servers":     broker,
+		"group.id":              uuid.New().String(),
+		"broker.address.family": "v4",
+		"session.timeout.ms":    6000,
+		"auto.offset.reset":     "earliest",
+	})
+	utils.CheckFatal("Unable to initialize Kafka consumer", err)
 
+	schemaRepo, err := local.NewLocalRepo(consumer)
+	utils.CheckFatal("Unable to initialize schema repository", err)
+
+	var stop chan bool
 	if len(os.Args) == 2 {
 		schemaAlias := schema.Alias(os.Args[1])
 
-		fmt.Printf("Wait for schema alias %v\n", schemaAlias)
+		log.Printf("Wait for schema alias %v\n", schemaAlias)
 		aliasReady := schemaRepo.WaitAliasReady(schemaAlias)
+
+		stop, err := schemaRepo.Run()
+		utils.CheckFatal("Unable to start schema repository", err)
 
 		ok := <-utils.SigAbort(aliasReady, signals)
 		if ok {
-			fmt.Println("Alias ready")
+			log.Println("Alias ready")
 		}
 		stop <- true
 		os.Exit(0)
 	}
+	stop, err = schemaRepo.Run()
+	utils.CheckFatal("Unable to start schema repository", err)
+	log.Print("Waiting for signal...")
 	<-signals
 	stop <- true
 }

@@ -14,7 +14,6 @@ type Repo interface {
 	WhoIs(alias Alias) (uuid.UUID, bool)
 	GetSpecification(schema uuid.UUID) (specification string, ok bool)
 	Count() int
-	Run() (stop chan bool)
 }
 
 type VersionedRepo interface {

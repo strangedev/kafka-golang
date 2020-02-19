@@ -6,6 +6,7 @@ import (
 	"github.com/confluentinc/confluent-kafka-go/kafka"
 	"github.com/google/uuid"
 	"github.com/linkedin/goavro"
+	"github.com/strangedev/kafka-golang/consumer/router"
 	"github.com/strangedev/kafka-golang/schema"
 	"github.com/strangedev/kafka-golang/schema/command"
 	"github.com/strangedev/kafka-golang/schema/maps"
@@ -15,21 +16,7 @@ import (
 type Repo struct {
 	Schemata maps.SchemaMap
 	Aliases  maps.AliasMap
-	Consumer *kafka.Consumer
-}
-
-func (repo *Repo) schemaUpdate(schemaUUID uuid.UUID, schemaSpecification string) error {
-	codec, err := goavro.NewCodec(schemaSpecification)
-	if err != nil {
-		log.Println(err)
-		return err
-	}
-	repo.Schemata.Insert(schemaUUID, codec)
-	return nil
-}
-
-func (repo *Repo) aliasUpdate(schemaUUID uuid.UUID, alias schema.Alias) {
-	repo.Aliases.Insert(alias, schemaUUID)
+	router.TopicRouter
 }
 
 func (repo Repo) Decode(schema uuid.UUID, datum []byte) (interface{}, error) {
@@ -108,11 +95,16 @@ func (repo Repo) handleSchemaUpdate(event *kafka.Message) error {
 	if err != nil {
 		return err
 	}
+
 	log.Printf("^^ UpdateRequest %v: %v\n", request.UUID, request.Spec)
-	err = repo.schemaUpdate(request.UUID, request.Spec)
+
+	codec, err := goavro.NewCodec(request.Spec)
 	if err != nil {
+		log.Println(err)
 		return err
 	}
+
+	repo.Schemata.Insert(request.UUID, codec)
 
 	return nil
 }
@@ -125,71 +117,22 @@ func (repo Repo) handleAliasUpdate(event *kafka.Message) error {
 	}
 
 	log.Printf("^^ AliasRequest %v: %v\n", request.UUID, request.Alias)
-	repo.aliasUpdate(request.UUID, schema.Alias(request.Alias))
+
+	repo.Aliases.Insert(schema.Alias(request.Alias), request.UUID)
 
 	return nil
 }
 
-func (repo Repo) Run() (stop chan bool) {
-	stop = make(chan bool, 1)
-	go (func() {
-		run := true
-		for run {
-			select {
-			case sig := <-stop:
-				log.Println(sig)
-				run = false
-			default:
-				event := repo.Consumer.Poll(100)
-				if event == nil {
-					continue
-				}
-
-				switch e := event.(type) {
-				case *kafka.Message:
-					switch *e.TopicPartition.Topic {
-					case "schema_update":
-						err := repo.handleSchemaUpdate(e)
-						if err != nil {
-							log.Printf("!! Error handling SchemaUpdate: %v", err)
-						}
-					case "schema_alias":
-						err := repo.handleAliasUpdate(e)
-						if err != nil {
-							log.Printf("!! Error handling AliasUpdate: %v", err)
-						}
-					}
-				case *kafka.Error:
-					log.Printf("!! Kafka Error: %v: %v\n", e.Code(), e)
-				default:
-					log.Printf("-- Ignored %v\n", e)
-				}
-			}
-		}
-	})()
-	return stop
-}
-
-func NewRepo(broker string) (Repo, error) {
+func NewLocalRepo(consumer *kafka.Consumer) (Repo, error) {
 	repo := Repo{
-		Schemata: maps.NewSchemaMap(),
-		Aliases:  maps.NewAliasMap(),
-		Consumer: nil,
+		TopicRouter: router.NewTopicRouter(consumer),
+		Schemata:    maps.NewSchemaMap(),
+		Aliases:     maps.NewAliasMap(),
 	}
-	consumer, err := kafka.NewConsumer(&kafka.ConfigMap{
-		"bootstrap.servers":     broker,
-		"group.id":              uuid.New().String(),
-		"broker.address.family": "v4",
-		"session.timeout.ms":    6000,
-		"auto.offset.reset":     "earliest",
-	})
-	if err != nil {
-		log.Println(err)
-		return repo, err
-	}
-	repo.Consumer = consumer
+	log.Printf("Created schema repository with TopicRouter %v", repo.TopicRouter)
 
-	topics := []string{"schema_update", "schema_alias"}
-	err = consumer.SubscribeTopics(topics, nil)
+	repo.NewRoute("schema_update", repo.handleSchemaUpdate)
+	repo.NewRoute("schema_alias", repo.handleAliasUpdate)
+
 	return repo, nil
 }
