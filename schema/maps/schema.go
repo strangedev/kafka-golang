@@ -3,13 +3,13 @@ package maps
 import (
 	"github.com/google/uuid"
 	"github.com/linkedin/goavro"
-	"github.com/strangedev/kafka-golang/lib/observable"
+	"github.com/strangedev/kafka-golang/lib"
 )
 
 type schemaMapType map[uuid.UUID]*goavro.Codec
 
 type SchemaMap struct {
-	observable.LockableObservable
+	lib.LockableObservable
 	Map schemaMapType
 }
 
@@ -22,7 +22,7 @@ func (m SchemaMap) Insert(schemaUUID uuid.UUID, codec *goavro.Codec) bool {
 
 func NewSchemaMap() SchemaMap {
 	return SchemaMap{
-		LockableObservable: observable.NewLockableObservable(),
+		LockableObservable: lib.NewLockableObservable(),
 		Map:                make(schemaMapType),
 	}
 }

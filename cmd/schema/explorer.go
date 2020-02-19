@@ -6,7 +6,7 @@ import (
 	"github.com/confluentinc/confluent-kafka-go/kafka"
 	"github.com/google/uuid"
 	"github.com/strangedev/kafka-golang/schema"
-	"github.com/strangedev/kafka-golang/schema/query/local"
+	"github.com/strangedev/kafka-golang/schema/query"
 	"github.com/strangedev/kafka-golang/utils"
 	"log"
 	"net/http"
@@ -75,7 +75,7 @@ func main() {
 	})
 	utils.CheckFatal("Unable to initialize Kafka consumer", err)
 
-	schemaRepo, err := local.NewLocalRepo(consumer)
+	schemaRepo, err := query.NewLocalRepo(consumer)
 	utils.CheckFatal("Unable to initialize schema repository", err)
 
 	stop, err := schemaRepo.Run()
@@ -99,16 +99,16 @@ func main() {
 	})
 
 	http.HandleFunc("/schema/describe", func(writer http.ResponseWriter, request *http.Request) {
-		query := request.URL.Query()
+		params := request.URL.Query()
 		if err != nil {
 			http.Error(writer, err.Error(), http.StatusInternalServerError)
 			log.Println(err)
 			return
 		}
 
-		schemaUUIDs := query["uuid"]
+		schemaUUIDs := params["uuid"]
 		if len(schemaUUIDs) < 1 {
-			http.Error(writer, "Required query <uuid>", http.StatusBadRequest)
+			http.Error(writer, "Required params <uuid>", http.StatusBadRequest)
 			return
 		}
 
@@ -141,15 +141,15 @@ func main() {
 	})
 
 	http.HandleFunc("/alias/describe", func(writer http.ResponseWriter, request *http.Request) {
-		query := request.URL.Query()
+		params := request.URL.Query()
 		if err != nil {
 			log.Println(err)
 			return
 		}
 
-		aliasesQuery := query["alias"]
+		aliasesQuery := params["alias"]
 		if len(aliasesQuery) < 1 {
-			http.Error(writer, "Required query <alias>", http.StatusBadRequest)
+			http.Error(writer, "Required params <alias>", http.StatusBadRequest)
 			return
 		}
 

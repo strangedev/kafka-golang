@@ -5,8 +5,7 @@ import (
 	"github.com/confluentinc/confluent-kafka-go/kafka"
 	"github.com/google/uuid"
 	"github.com/strangedev/kafka-golang/schema"
-	"github.com/strangedev/kafka-golang/schema/query/local"
-	"github.com/strangedev/kafka-golang/schema/query/versioned"
+	"github.com/strangedev/kafka-golang/schema/query"
 	"github.com/strangedev/kafka-golang/utils"
 	"log"
 	"os"
@@ -37,12 +36,11 @@ func main() {
 	})
 	utils.CheckFatal("Unable to initialize Kafka consumer", err)
 
-	schemaRepo, err := local.NewLocalRepo(consumer)
+	schemaRepo, err := query.NewLocalRepo(consumer)
 	utils.CheckFatal("Unable to initialize schema repository", err)
 
-	versions := versioned.FromRepo(schemaRepo)
 	schemaVersion := schema.NameVersion{Name: "mySchema", Version: 13}
-	schemaReady := versions.WaitSchemaReady(schemaVersion)
+	schemaReady := schemaRepo.WaitSchemaVersionReady(schemaVersion)
 	stop, err := schemaRepo.Run()
 	utils.CheckFatal("Unable to start schema repository", err)
 
@@ -54,9 +52,8 @@ func main() {
 
 	ok := <-schemaReady
 	if ok {
-		log.Println("Schema ready")
-		schemaUUID, _ := versions.WhoIs(schema.Alias(schemaVersion.String()))
-		log.Printf("Is UUID %v\n", schemaUUID)
+		schemaUUID, _ := schemaRepo.WhoIs(schemaVersion.Alias())
+		log.Printf("Schema ready, has UUID %v\n", schemaUUID)
 	} else {
 		log.Println("Aborted")
 	}

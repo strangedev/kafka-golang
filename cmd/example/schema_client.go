@@ -5,7 +5,7 @@ import (
 	"github.com/confluentinc/confluent-kafka-go/kafka"
 	"github.com/google/uuid"
 	"github.com/strangedev/kafka-golang/schema"
-	"github.com/strangedev/kafka-golang/schema/query/local"
+	"github.com/strangedev/kafka-golang/schema/query"
 	"github.com/strangedev/kafka-golang/utils"
 	"log"
 	"os"
@@ -36,7 +36,7 @@ func main() {
 	})
 	utils.CheckFatal("Unable to initialize Kafka consumer", err)
 
-	schemaRepo, err := local.NewLocalRepo(consumer)
+	schemaRepo, err := query.NewLocalRepo(consumer)
 	utils.CheckFatal("Unable to initialize schema repository", err)
 
 	var stop chan bool

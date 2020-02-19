@@ -2,14 +2,14 @@ package maps
 
 import (
 	"github.com/google/uuid"
-	"github.com/strangedev/kafka-golang/lib/observable"
+	"github.com/strangedev/kafka-golang/lib"
 	"github.com/strangedev/kafka-golang/schema"
 )
 
 type aliasMapType map[schema.Alias]uuid.UUID
 
 type AliasMap struct {
-	observable.LockableObservable
+	lib.LockableObservable
 	Map aliasMapType
 }
 
@@ -22,7 +22,7 @@ func (m AliasMap) Insert(alias schema.Alias, schemaUUID uuid.UUID) bool {
 
 func NewAliasMap() AliasMap {
 	return AliasMap{
-		LockableObservable: observable.NewLockableObservable(),
+		LockableObservable: lib.NewLockableObservable(),
 		Map:                make(aliasMapType),
 	}
 }

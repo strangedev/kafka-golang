@@ -1,4 +1,4 @@
-package local
+package query
 
 import (
 	"encoding/json"
@@ -19,7 +19,7 @@ type Repo struct {
 	router.TopicRouter
 }
 
-func (repo Repo) Decode(schema uuid.UUID, datum []byte) (interface{}, error) {
+func (repo Repo) DecodeAvro(schema uuid.UUID, datum []byte) (interface{}, error) {
 	codec, ok := repo.Schemata.Map[schema]
 	if !ok {
 		return nil, errors.New("schema not present")
@@ -28,7 +28,7 @@ func (repo Repo) Decode(schema uuid.UUID, datum []byte) (interface{}, error) {
 	return native, err
 }
 
-func (repo Repo) Encode(schema uuid.UUID, datum interface{}) ([]byte, error) {
+func (repo Repo) EncodeAvro(schema uuid.UUID, datum interface{}) ([]byte, error) {
 	codec, ok := repo.Schemata.Map[schema]
 	if !ok {
 		return nil, errors.New("schema not present")
@@ -135,4 +135,24 @@ func NewLocalRepo(consumer *kafka.Consumer) (Repo, error) {
 	repo.NewRoute("schema_alias", repo.handleAliasUpdate)
 
 	return repo, nil
+}
+
+func (repo Repo) Decode(schema schema.NameVersion, datum []byte) (interface{}, error) {
+	if schemaUUID, ok := repo.WhoIs(schema.Alias()); !ok {
+		decoded, err := repo.DecodeAvro(schemaUUID, datum)
+		return decoded, err
+	}
+	return nil, errors.New("schema not know to this repo")
+}
+
+func (repo Repo) Encode(schema schema.NameVersion, datum interface{}) ([]byte, error) {
+	if schemaUUID, ok := repo.WhoIs(schema.Alias()); ok {
+		encoded, err := repo.EncodeAvro(schemaUUID, datum)
+		return encoded, err
+	}
+	return nil, errors.New("schema not know to this repo")
+}
+
+func (repo Repo) WaitSchemaVersionReady(schema schema.NameVersion) chan bool {
+	return repo.WaitAliasReady(schema.Alias())
 }
