@@ -2,7 +2,7 @@ package versioned
 
 import (
 	"errors"
-	"kafka-go/schema"
+	"kafka-golang/schema"
 )
 
 type VersionedRepo struct {

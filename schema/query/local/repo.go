@@ -6,9 +6,9 @@ import (
 	"github.com/confluentinc/confluent-kafka-go/kafka"
 	"github.com/google/uuid"
 	"github.com/linkedin/goavro"
-	"kafka-go/schema"
-	"kafka-go/schema/command"
-	"kafka-go/schema/maps"
+	"kafka-golang/schema"
+	"kafka-golang/schema/command"
+	"kafka-golang/schema/maps"
 	"log"
 )
 
