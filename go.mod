@@ -1,4 +1,4 @@
-module kafka-golang
+module github.com/strangedev/kafka-golang
 
 go 1.13
 
