@@ -14,8 +14,10 @@ type SchemaMap struct {
 }
 
 func (m SchemaMap) Insert(schemaUUID uuid.UUID, codec *goavro.Codec) bool {
+	m.DataLock.Lock()
 	_, overwritten := m.Map[schemaUUID]
 	m.Map[schemaUUID] = codec
+	m.DataLock.Unlock()
 	m.Notify(schemaUUID)
 	return overwritten
 }

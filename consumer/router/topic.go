@@ -48,7 +48,7 @@ func (t TopicRouter) Run() (chan bool, error) {
 
 	stop := make(chan bool, 1)
 	go (func() {
-		forever:
+	forever:
 		for {
 			select {
 			case <-stop:

@@ -1,6 +1,10 @@
 package schema
 
-import "fmt"
+import (
+	"errors"
+	"fmt"
+	"strings"
+)
 
 type NameVersion struct {
 	Name    string
@@ -52,4 +56,19 @@ func (v NameVersion) String() string {
 
 func (v NameVersion) Alias() Alias {
 	return Alias(v.String())
+}
+
+func VersionFromString(s string) (NameVersion, error) {
+	version := NameVersion{}
+	parts := strings.Split(s, "-v")
+	if len(parts) != 2 {
+		return version, errors.New("invalid format")
+	}
+	version.Name = parts[0]
+	_, err := fmt.Sscanf(parts[1], "%x", &version.Version)
+	return version, err
+}
+
+func VersionFromAlias(a Alias) (NameVersion, error) {
+	return VersionFromString(string(a))
 }

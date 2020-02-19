@@ -22,7 +22,7 @@ type LowLevelProducer interface {
 	ProduceSync(message *kafka.Message) error
 }
 
-func (k* KafkaProducer) ProduceSync(message *kafka.Message) error {
+func (k *KafkaProducer) ProduceSync(message *kafka.Message) error {
 	deliveryChan := make(chan kafka.Event)
 	defer close(deliveryChan)
 

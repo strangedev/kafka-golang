@@ -14,8 +14,10 @@ type AliasMap struct {
 }
 
 func (m AliasMap) Insert(alias schema.Alias, schemaUUID uuid.UUID) bool {
+	m.DataLock.Lock()
 	_, overwritten := m.Map[alias]
 	m.Map[alias] = schemaUUID
+	m.DataLock.Unlock()
 	m.Notify(alias)
 	return overwritten
 }

@@ -6,6 +6,7 @@ import (
 	"github.com/confluentinc/confluent-kafka-go/kafka"
 	"github.com/google/uuid"
 	"github.com/strangedev/kafka-golang/schema"
+	"github.com/strangedev/kafka-golang/schema/explorer"
 	"github.com/strangedev/kafka-golang/schema/query"
 	"github.com/strangedev/kafka-golang/utils"
 	"log"
@@ -14,34 +15,6 @@ import (
 	"os/signal"
 	"syscall"
 )
-
-type SchemaDTO struct {
-	UUID          uuid.UUID `json:"uuid"`
-	Specification string    `json:"spec"`
-}
-
-type SchemataDTO struct {
-	Schemata []SchemaDTO `json:"schemata"`
-}
-
-type SchemaListDTO struct {
-	Count    int         `json:"count"`
-	Schemata []uuid.UUID `json:"schemata"`
-}
-
-type AliasDTO struct {
-	Alias schema.Alias	`json:"alias"`
-	UUID  uuid.UUID `json:"uuid"`
-}
-
-type AliasListDTO struct {
-	Aliases []schema.Alias `json:"aliases"`
-	Count   int      `json:"count"`
-}
-
-type AliasesDTO struct {
-	Aliases []AliasDTO `json:"aliases"`
-}
 
 var broker string
 
@@ -86,14 +59,14 @@ func main() {
 
 	go (func() {
 		for sig := range signals {
-			stop<-true
+			stop <- true
 			log.Panicf("Caught %v", sig)
 		}
 	})()
 
 	http.HandleFunc("/schema/list", func(writer http.ResponseWriter, request *http.Request) {
 		schemata := schemaRepo.ListSchemata()
-		schemaList := SchemaListDTO{Schemata: schemata, Count: len(schemata)}
+		schemaList := explorer.SchemaListDTO{Schemata: schemata, Count: len(schemata)}
 
 		writeJSON(writer, schemaList)
 	})
@@ -112,7 +85,7 @@ func main() {
 			return
 		}
 
-		schemata := SchemataDTO{Schemata: make([]SchemaDTO, 0, len(schemaUUIDs))}
+		schemata := explorer.SchemataDTO{Schemata: make([]explorer.SchemaDTO, 0, len(schemaUUIDs))}
 		for _, uuidString := range schemaUUIDs {
 			schemaUUID, err := uuid.Parse(uuidString)
 			if err != nil {
@@ -127,7 +100,7 @@ func main() {
 				continue
 			}
 
-			schemata.Schemata = append(schemata.Schemata, SchemaDTO{UUID: schemaUUID, Specification: spec})
+			schemata.Schemata = append(schemata.Schemata, explorer.SchemaDTO{UUID: schemaUUID, Specification: spec})
 		}
 
 		writeJSON(writer, schemata)
@@ -135,7 +108,7 @@ func main() {
 
 	http.HandleFunc("/alias/list", func(writer http.ResponseWriter, request *http.Request) {
 		aliases := schemaRepo.ListAliases()
-		aliasList := AliasListDTO{Aliases: aliases, Count: len(aliases)}
+		aliasList := explorer.AliasListDTO{Aliases: aliases, Count: len(aliases)}
 
 		writeJSON(writer, aliasList)
 	})
@@ -153,7 +126,7 @@ func main() {
 			return
 		}
 
-		aliases := AliasesDTO{Aliases: make([]AliasDTO, 0)}
+		aliases := explorer.AliasesDTO{Aliases: make([]explorer.AliasDTO, 0)}
 		for _, aliasString := range aliasesQuery {
 			alias := schema.Alias(aliasString)
 			schemaUUID, ok := schemaRepo.WhoIs(alias)
@@ -162,7 +135,7 @@ func main() {
 				continue
 			}
 
-			aliases.Aliases = append(aliases.Aliases, AliasDTO{UUID: schemaUUID, Alias: alias})
+			aliases.Aliases = append(aliases.Aliases, explorer.AliasDTO{UUID: schemaUUID, Alias: alias})
 		}
 
 		writeJSON(writer, aliases)
