@@ -3,7 +3,7 @@ package maps
 import (
 	"github.com/google/uuid"
 	"github.com/linkedin/goavro"
-	"kafka-golang/lib/observable"
+	"github.com/strangedev/kafka-golang/lib/observable"
 )
 
 type schemaMapType map[uuid.UUID]*goavro.Codec

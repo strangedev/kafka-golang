@@ -18,17 +18,15 @@ func NewKafkaProducer(broker string) (*KafkaProducer, error) {
 }
 
 type LowLevelProducer interface {
-	ProduceSync(topic string, partition int32, value []byte) error
+	ProduceSimpleSync(topic string, partition int32, value []byte) error
+	ProduceSync(message *kafka.Message) error
 }
 
-func (k *KafkaProducer) ProduceSync(topic string, partition int32, value []byte) error {
+func (k* KafkaProducer) ProduceSync(message *kafka.Message) error {
 	deliveryChan := make(chan kafka.Event)
 	defer close(deliveryChan)
 
-	err := k.Producer.Produce(&kafka.Message{
-		TopicPartition: kafka.TopicPartition{Topic: &topic, Partition: partition},
-		Value:          value,
-	}, deliveryChan)
+	err := k.Producer.Produce(message, deliveryChan)
 
 	e := <-deliveryChan
 	m := e.(*kafka.Message)
@@ -40,4 +38,14 @@ func (k *KafkaProducer) ProduceSync(topic string, partition int32, value []byte)
 	}
 
 	return err
+}
+
+func (k *KafkaProducer) ProduceSimpleSync(topic string, partition int32, value []byte) error {
+	deliveryChan := make(chan kafka.Event)
+	defer close(deliveryChan)
+
+	return k.ProduceSync(&kafka.Message{
+		TopicPartition: kafka.TopicPartition{Topic: &topic, Partition: partition},
+		Value:          value,
+	})
 }

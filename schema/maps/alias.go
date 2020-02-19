@@ -2,8 +2,8 @@ package maps
 
 import (
 	"github.com/google/uuid"
-	"kafka-golang/lib/observable"
-	"kafka-golang/schema"
+	"github.com/strangedev/kafka-golang/lib/observable"
+	"github.com/strangedev/kafka-golang/schema"
 )
 
 type aliasMapType map[schema.Alias]uuid.UUID

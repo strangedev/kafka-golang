@@ -2,9 +2,9 @@ package main
 
 import (
 	"fmt"
-	"kafka-golang/schema"
-	"kafka-golang/schema/query/local"
-	"kafka-golang/utils"
+	"github.com/strangedev/kafka-golang/schema"
+	"github.com/strangedev/kafka-golang/schema/query/local"
+	"github.com/strangedev/kafka-golang/utils"
 	"log"
 	"os"
 	"os/signal"

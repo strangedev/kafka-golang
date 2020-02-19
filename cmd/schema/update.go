@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 	"github.com/google/uuid"
-	"kafka-golang/schema/command"
+	"github.com/strangedev/kafka-golang/schema/command"
 	"os"
 )
 

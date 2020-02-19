@@ -3,7 +3,7 @@ package main
 import (
 	"encoding/json"
 	"github.com/google/uuid"
-	"kafka-golang/schema/query/local"
+	"github.com/strangedev/kafka-golang/schema/query/local"
 	"log"
 	"net/http"
 	"os"

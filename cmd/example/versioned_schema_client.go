@@ -1,9 +1,9 @@
 package main
 
 import (
-	"kafka-golang/schema"
-	"kafka-golang/schema/query/local"
-	"kafka-golang/schema/query/versioned"
+	"github.com/strangedev/kafka-golang/schema"
+	"github.com/strangedev/kafka-golang/schema/query/local"
+	"github.com/strangedev/kafka-golang/schema/query/versioned"
 	"log"
 	"os"
 	"os/signal"

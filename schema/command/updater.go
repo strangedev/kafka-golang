@@ -3,7 +3,7 @@ package command
 import (
 	"github.com/confluentinc/confluent-kafka-go/kafka"
 	"github.com/google/uuid"
-	"kafka-golang/producer"
+	"github.com/strangedev/kafka-golang/producer"
 )
 
 type Commander struct {

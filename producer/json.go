@@ -11,5 +11,5 @@ func (k *KafkaProducer) ProduceJSONSync(topic string, partition int32, value int
 	if err != nil {
 		return err
 	}
-	return k.ProduceSync(topic, partition, marshaled)
+	return k.ProduceSimpleSync(topic, partition, marshaled)
 }
