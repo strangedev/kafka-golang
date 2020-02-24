@@ -21,7 +21,7 @@ type Handler func(event *kafka.Message) error
 
 // KeyRouter is a generic router for Kafka which routes consumed messages to a set of configured handlers based on a key.
 type KeyRouter interface {
-	KafkaConsumer
+	Consumer
 	// NewRoute registers a handler for the given key. Only one handler may exist per key.
 	NewRoute(key catchall.Key, handler Handler)
 	// Handle routes a single Event either to the appropriate Handler function or to a generic error handler.

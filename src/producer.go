@@ -10,22 +10,23 @@
 package kafka_golang
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/confluentinc/confluent-kafka-go/kafka"
 )
 
-// KafkaProducer is a wrapper for kafka.Producer which handles delivery failure in a canonical way.
-type KafkaProducer struct {
+// Producer is a wrapper for kafka.Producer which handles delivery failure in a canonical way.
+type Producer struct {
 	Producer *kafka.Producer
 }
 
-// NewKafkaProducer constructs a new KafkaProducer that will produce into the given Kafka broker.
-func NewKafkaProducer(broker string) (*KafkaProducer, error) {
+// NewKafkaProducer constructs a new Producer that will produce into the given Kafka broker.
+func NewKafkaProducer(broker string) (*Producer, error) {
 	p, err := kafka.NewProducer(&kafka.ConfigMap{"bootstrap.servers": broker})
 	if err != nil {
 		return nil, err
 	}
-	return &KafkaProducer{Producer: p}, nil
+	return &Producer{Producer: p}, nil
 }
 
 // LowLevelProducer provides access to synchronous sending routines.
@@ -37,7 +38,7 @@ type LowLevelProducer interface {
 	ProduceSync(message *kafka.Message) error
 }
 
-func (k *KafkaProducer) ProduceSync(message *kafka.Message) error {
+func (k *Producer) ProduceSync(message *kafka.Message) error {
 	deliveryChan := make(chan kafka.Event)
 	defer close(deliveryChan)
 
@@ -55,7 +56,7 @@ func (k *KafkaProducer) ProduceSync(message *kafka.Message) error {
 	return err
 }
 
-func (k *KafkaProducer) ProduceSimpleSync(topic string, partition int32, value []byte) error {
+func (k *Producer) ProduceSimpleSync(topic string, partition int32, value []byte) error {
 	deliveryChan := make(chan kafka.Event)
 	defer close(deliveryChan)
 
@@ -63,4 +64,17 @@ func (k *KafkaProducer) ProduceSimpleSync(topic string, partition int32, value [
 		TopicPartition: kafka.TopicPartition{Topic: &topic, Partition: partition},
 		Value:          value,
 	})
+}
+
+type JSONProducer interface {
+	// ProduceJSONSync produces a message without headers and key by JSON-encoding the given value.
+	ProduceJSONSync(topic string, partition int32, value interface{}) error
+}
+
+func (k *Producer) ProduceJSONSync(topic string, partition int32, value interface{}) error {
+	marshaled, err := json.Marshal(value)
+	if err != nil {
+		return err
+	}
+	return k.ProduceSimpleSync(topic, partition, marshaled)
 }
