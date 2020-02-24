@@ -8,11 +8,15 @@ import (
 
 type aliasMapType map[schema.Alias]uuid.UUID
 
+// SchemaMap is a KeyObservable map of Aliases to UUIDs
 type AliasMap struct {
-	lib.LockableObservable
+	lib.ConcurrentObservable
 	Map aliasMapType
 }
 
+// Upsert inserts or updates an Alias, UUID pair into the map.
+// All of the map's observers are notified of this change.
+// It returns true, if the map entry did already exist and was overwritten.
 func (m AliasMap) Insert(alias schema.Alias, schemaUUID uuid.UUID) bool {
 	m.DataLock.Lock()
 	_, overwritten := m.Map[alias]
@@ -22,9 +26,10 @@ func (m AliasMap) Insert(alias schema.Alias, schemaUUID uuid.UUID) bool {
 	return overwritten
 }
 
+// NewAliasMap constructs an empty AliasMap with no observers.
 func NewAliasMap() AliasMap {
 	return AliasMap{
-		LockableObservable: lib.NewLockableObservable(),
-		Map:                make(aliasMapType),
+		ConcurrentObservable: lib.NewConcurrentObservable(),
+		Map:                  make(aliasMapType),
 	}
 }

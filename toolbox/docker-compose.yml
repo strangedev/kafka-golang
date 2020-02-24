@@ -6,7 +6,7 @@ services:
       - default
       - kafka
     volumes:
-    - ./:/go/src/app
+    - ../:/go/src/app
     ports:
     - 8084:8080
 networks:

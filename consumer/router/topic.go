@@ -2,15 +2,17 @@ package router
 
 import (
 	"github.com/confluentinc/confluent-kafka-go/kafka"
+	"github.com/strangedev/kafka-golang/lib"
 	"log"
 )
 
+// TopicRouter is a Router that routes based on the Kafka topic of consumed messages.
 type TopicRouter struct {
 	*kafka.Consumer
-	Handlers map[string]Handler
+	Handlers map[lib.Key]Handler
 }
 
-func (t TopicRouter) NewRoute(topic string, handler Handler) {
+func (t TopicRouter) NewRoute(topic lib.Key, handler Handler) {
 	log.Printf("New handler for topic %v", topic)
 	t.Handlers[topic] = handler
 }
@@ -18,7 +20,7 @@ func (t TopicRouter) NewRoute(topic string, handler Handler) {
 func (t TopicRouter) Handle(event kafka.Event) {
 	switch e := event.(type) {
 	case *kafka.Message:
-		topic := *e.TopicPartition.Topic
+		topic := lib.NewPlainKey(*e.TopicPartition.Topic)
 		err := t.Handlers[topic](e)
 		if err != nil {
 			log.Printf("!! Error in route handler: %v", err.Error())
@@ -32,8 +34,8 @@ func (t TopicRouter) Handle(event kafka.Event) {
 
 func (t TopicRouter) Topics() []string {
 	topics := make([]string, 0, len(t.Handlers))
-	for topic, _ := range t.Handlers {
-		topics = append(topics, topic)
+	for key, _ := range t.Handlers {
+		topics = append(topics, key.String())
 	}
 	return topics
 }
@@ -70,6 +72,6 @@ func NewTopicRouter(consumer *kafka.Consumer) TopicRouter {
 	log.Printf("Created new TopicRouter with consumer %v", consumer)
 	return TopicRouter{
 		Consumer: consumer,
-		Handlers: make(map[string]Handler),
+		Handlers: make(map[lib.Key]Handler),
 	}
 }

@@ -18,7 +18,7 @@ import (
 	"os"
 )
 
-var name, brokerURL, explorerURL string
+var name, brokerURL, explorerURL, schemaSpecURL string
 var skipExplorerCheck bool
 
 func init() {
@@ -26,6 +26,7 @@ func init() {
 	flag.StringVar(&brokerURL, "broker", "broker0:9092", "URL of a Kafka broker")
 	flag.StringVar(&explorerURL, "explorer", "schema-explorer:8085", "Use the schema explorer to check if the schema already exists before creating it.")
 	flag.BoolVar(&skipExplorerCheck, "skip-check", false, "Do not use the schema explorer to check if if the schema already exists.")
+	flag.StringVar(&schemaSpecURL, "from-url", "", "Fetch the specification via HTTP GET rather than reading from Stdin.")
 }
 
 func latestSchemaVersion() (uint, bool) {
@@ -53,6 +54,10 @@ func latestSchemaVersion() (uint, bool) {
 
 func main() {
 	flag.Parse()
+	if name == "" {
+		log.Fatalf("The schema needs to be named.")
+	}
+
 	schemaVersion := schema.NewVersionOrigin(name)
 	if !skipExplorerCheck {
 		log.Println("Checking if schema already exists...")
@@ -61,21 +66,31 @@ func main() {
 		}
 		log.Println("Schema does not yet exist, continuing")
 	}
-	scanner := bufio.NewScanner(os.Stdin)
-	buffer := bytes.Buffer{}
-	for scanner.Scan() {
-		buffer.Write(scanner.Bytes())
+
+	specBytes := bytes.Buffer{}
+	if schemaSpecURL != "" {
+		resp, err := http.Get(schemaSpecURL)
+		utils.CheckFatal("Unable to fetch specification via HTTP GET", err)
+		_, err = specBytes.ReadFrom(resp.Body)
+		utils.CheckFatal("Unable to read response from remote while fetching specification", err)
+	} else {
+		scanner := bufio.NewScanner(os.Stdin)
+		for scanner.Scan() {
+			specBytes.Write(scanner.Bytes())
+		}
+		if err := scanner.Err(); err != nil {
+			log.Fatalf("Unable to read from stdin: %v", err)
+		}
 	}
-	if err := scanner.Err(); err != nil {
-		log.Fatalf("Unable to read from stdin: %v", err)
-	}
-	_, err := goavro.NewCodec(buffer.String())
+	spec := specBytes.String()
+
+	_, err := goavro.NewCodec(spec)
 	utils.CheckFatal("This does not seem like a valid Avro schema", err)
 
 	schemaUUID := uuid.New()
 	cmd, err := command.NewUpdater(brokerURL)
 	utils.CheckFatal("Unable to initialize updater", err)
-	err = cmd.UpdateSchema(schemaUUID, buffer.String())
+	err = cmd.UpdateSchema(schemaUUID, spec)
 	utils.CheckFatal("Unable to produce SchemaUpdate event", err)
 	log.Printf("Updated schema %v", schemaUUID)
 	err = cmd.UpdateAlias(schemaVersion.String(), schemaUUID)

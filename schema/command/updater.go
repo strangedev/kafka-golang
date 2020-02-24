@@ -6,15 +6,21 @@ import (
 	"github.com/strangedev/kafka-golang/producer"
 )
 
+// Commander is a KafkaProducer used for writing schema updates into Kafka.
 type Commander struct {
 	*producer.KafkaProducer
 }
 
+// Updater encapsulates the methods required to update the schema repository stored in Kafka.
 type Updater interface {
+	// UpdateSchema sets the given UUID to equal the given plain-text Avro spec.
 	UpdateSchema(schemaUUID uuid.UUID, specification string) error
+	// UpdateAlias sets the given Alias to equal the given UUID.
 	UpdateAlias(alias string, schemaUUID uuid.UUID) error
 }
 
+// NewUpdater constructs an Updater that uses the given Kafka broker to write updates.
+// This will create a new KafkaProducer.
 func NewUpdater(broker string) (Updater, error) {
 	p, err := producer.NewKafkaProducer(broker)
 	if err != nil {
@@ -23,9 +29,12 @@ func NewUpdater(broker string) (Updater, error) {
 	return NewUpdaterWithProducer(p), nil
 }
 
+// NewUpdater constructs an Updater that uses the given KafkaProducer to produce its events.
+// In most cases, it is fine to use NewUpdater instead and let it create a new KafkaProducer.
 func NewUpdaterWithProducer(p *producer.KafkaProducer) Updater {
 	return Commander{p}
 }
+
 
 func (cmd Commander) UpdateSchema(schemaUUID uuid.UUID, specification string) error {
 	topic := "schema_update"

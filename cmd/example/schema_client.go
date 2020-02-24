@@ -2,10 +2,8 @@ package main
 
 import (
 	"flag"
-	"github.com/confluentinc/confluent-kafka-go/kafka"
-	"github.com/google/uuid"
 	"github.com/strangedev/kafka-golang/schema"
-	"github.com/strangedev/kafka-golang/schema/query"
+	"github.com/strangedev/kafka-golang/schema/repo"
 	"github.com/strangedev/kafka-golang/utils"
 	"log"
 	"os"
@@ -27,16 +25,7 @@ func main() {
 
 	log.Printf("Pulling schemata from %v", broker)
 
-	consumer, err := kafka.NewConsumer(&kafka.ConfigMap{
-		"bootstrap.servers":     broker,
-		"group.id":              uuid.New().String(),
-		"broker.address.family": "v4",
-		"session.timeout.ms":    6000,
-		"auto.offset.reset":     "earliest",
-	})
-	utils.CheckFatal("Unable to initialize Kafka consumer", err)
-
-	schemaRepo, err := query.NewLocalRepo(consumer)
+	schemaRepo, err := repo.NewLocalRepo(broker)
 	utils.CheckFatal("Unable to initialize schema repository", err)
 
 	var stop chan bool
