@@ -7,21 +7,21 @@
  * Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
  */
 
-package router
+package kafka_golang
 
 import (
 	"github.com/confluentinc/confluent-kafka-go/kafka"
-	"github.com/strangedev/kafka-golang/lib"
+	"github.com/strangedev/catchall"
 	"log"
 )
 
 // TopicRouter is a Router that routes based on the Kafka topic of consumed messages.
 type TopicRouter struct {
 	*kafka.Consumer
-	Handlers map[lib.Key]Handler
+	Handlers map[catchall.Key]Handler
 }
 
-func (t TopicRouter) NewRoute(topic lib.Key, handler Handler) {
+func (t TopicRouter) NewRoute(topic catchall.Key, handler Handler) {
 	log.Printf("New handler for topic %v", topic)
 	t.Handlers[topic] = handler
 }
@@ -29,7 +29,7 @@ func (t TopicRouter) NewRoute(topic lib.Key, handler Handler) {
 func (t TopicRouter) Handle(event kafka.Event) {
 	switch e := event.(type) {
 	case *kafka.Message:
-		topic := lib.NewPlainKey(*e.TopicPartition.Topic)
+		topic := catchall.NewPlainKey(*e.TopicPartition.Topic)
 		err := t.Handlers[topic](e)
 		if err != nil {
 			log.Printf("!! Error in route handler: %v", err.Error())
@@ -81,6 +81,6 @@ func NewTopicRouter(consumer *kafka.Consumer) TopicRouter {
 	log.Printf("Created new TopicRouter with consumer %v", consumer)
 	return TopicRouter{
 		Consumer: consumer,
-		Handlers: make(map[lib.Key]Handler),
+		Handlers: make(map[catchall.Key]Handler),
 	}
 }

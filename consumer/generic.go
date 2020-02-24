@@ -7,11 +7,11 @@
  * Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
  */
 
-package consumer
+package kafka_golang
 
-// Consumer is the generic interface for all consumers.
-type Consumer interface {
-	// Run starts the consumer. It is necessary to call this method, otherwise the Consumer
+// KafkaConsumer is the generic interface for all consumers.
+type KafkaConsumer interface {
+	// Run starts the consumer. It is necessary to call this method, otherwise the KafkaConsumer
 	// won't consume any events.
 	Run() (stop chan bool, err error)
 }

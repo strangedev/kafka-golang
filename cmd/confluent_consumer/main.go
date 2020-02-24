@@ -84,7 +84,7 @@ func main() {
 				// Errors should generally be considered
 				// informational, the client will try to
 				// automatically recover.
-				// But in this example we choose to terminate
+				// But in this confluent_producer we choose to terminate
 				// the application if all brokers are down.
 				fmt.Fprintf(os.Stderr, "%% Error: %v: %v\n", e.Code(), e)
 				if e.Code() == kafka.ErrAllBrokersDown {

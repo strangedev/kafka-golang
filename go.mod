@@ -7,5 +7,7 @@ require (
 	github.com/golang/snappy v0.0.1 // indirect
 	github.com/google/uuid v1.1.1
 	github.com/linkedin/goavro v2.1.0+incompatible
-	gopkg.in/linkedin/goavro.v1 v1.0.5 // indirect
+	github.com/strangedev/catchall v0.0.1
+	golang.org/x/tools v0.0.0-20200221224223-e1da425f72fd // indirect
+	gopkg.in/linkedin/goavro.v1 v1.0.5
 )
